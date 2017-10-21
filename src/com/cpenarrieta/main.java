@@ -13,19 +13,7 @@ public class main {
  }
   
   public static void main(String[] args) {
-//    NeuralNet neuralNet = new NeuralNet(2, 4, 0.2, 0.0, 0, 1);
-//    neuralNet.trainXORWithAcceptableError(0.05);
-    int numInput = 2;
-    int numHidden = 4;
-    int tmp = numHidden;
-    
-    for (int i = 0; i < numInput; i++) {
-      for (int j = 0; j < numHidden; j++) {
-        System.out.print(i + " - ");
-        System.out.print(j + " - ");
-        System.out.println(tmp);
-        tmp++;
-      }
-    }
+    NeuralNet neuralNet = new NeuralNet(2, 4, 0.2, 0.0, 0, 1);
+    neuralNet.trainXORWithAcceptableError(0.05);
   }
 }

@@ -101,7 +101,7 @@ public class NeuralNet implements NeuralNetInterface {
 	}
 	
 	public double gradientOfOutputWithRespectToInput(double finalOutput, double finalExpectedOutput, double hiddenValue, double input) {
-	  return 0;
+	  return (-(finalExpectedOutput - finalOutput)) * (finalOutput * (1 - finalOutput)) * (hiddenValue * (1 - hiddenValue)) * (input);
 	}
 
 	/**
@@ -142,17 +142,9 @@ public class NeuralNet implements NeuralNetInterface {
         tmp++;
       }
     }
-//	  int len = numInputs * numHidden;
-//	  for (int i = 0; i < len; i++) {
-////	    double gradientWi = gradientWithRespecToWi(output, argValue, hiddenValues[Math.round(i / numHidden)]);
-//	    double gradientWi = gradientWithRespecToWi(hiddenValues[Math.round(i / numHidden)], argValue, X[Math.round(i / numHidden)]);
-//      double updatedWeight = newWeight(level1Weights[i + numHidden], gradientWi);
-//      newLevel1Weights[i + numHidden] = updatedWeight;
-//	  }
 	  
 	  // level 1 - bias
 	  for (int i = 0; i < numHidden; i++) {
-//	    double gradientWi = gradientWithRespecToWi(hiddenValues[i], argValue, bias);
 	    double gradientWi = gradientOfOutputWithRespectToInput(output, argValue, hiddenValues[i], bias);
       double updatedWeight = newWeight(level1Weights[i], gradientWi);
       newLevel1Weights[i] = updatedWeight;
@@ -179,7 +171,6 @@ public class NeuralNet implements NeuralNetInterface {
 	  int numIterations = 0;
 	  double error = 0;
 	  double sumError = 0;
-	  double avgError = 0;
 	 	  
 	  double[] input1 = { 0, 1 };
 	  double target1 = 1;  
@@ -209,25 +200,16 @@ public class NeuralNet implements NeuralNetInterface {
       sumError += error;
       
       numIterations++;
-      avgError = sumError / 4;
-	  } while (avgError >= acceptableError && numIterations < 10000000);
+      
+      if (numIterations == 1) {
+        System.out.println("Initial error: " + sumError);
+      }
+	  } while (sumError >= acceptableError && numIterations < 10000000);
 	  
-	  System.out.println("final error: " + avgError);
-	  System.out.println("============================");
-	  
-	  System.out.println("final Level 1 weights:");
-	  for (int i = 0; i < level1Lenght; i++) {
-	    System.out.println(level1Weights[i]);
-	  }
-
-	  System.out.println("============================");
-	  System.out.println("final Level 2 weights:");
-    for (int i = 0; i < level2Lenght; i++) {
-      System.out.println(level2Weights[i]);
-    }
-    
-    System.out.println("============================");
-    System.out.println("iterations: " + numIterations);
+	  System.out.println("Final error: " + sumError);
+	  System.out.println("Final Level 1 weights: " + printArray(level1Weights));
+	  System.out.println("Final Level 2 weights: " + printArray(level2Weights));
+    System.out.println("Iterations: " + numIterations);
 	}
 
 	/**
@@ -348,4 +330,3 @@ public class NeuralNet implements NeuralNetInterface {
 	}
 }
 
-//New weight = old weight + (momentum*delta weight) + (learning rate*error in output node*value of input node)
