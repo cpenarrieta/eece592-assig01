@@ -99,10 +99,6 @@ public class NeuralNet implements NeuralNetInterface {
 	  
 	  return customSigmoid(sumResults);
 	}
-	
-	public double gradientOfOutputWithRespectToInput(double finalOutput, double finalExpectedOutput, double hiddenValue, double input) {
-	  return (-(finalExpectedOutput - finalOutput)) * (finalOutput * (1 - finalOutput)) * (hiddenValue * (1 - hiddenValue)) * (input);
-	}
 
 	/**
    * This method will tell the Neural Net(NN) the output
@@ -127,7 +123,7 @@ public class NeuralNet implements NeuralNetInterface {
 	      val = hiddenValues[i - 1];
 	    }
 	    double gradientWi = gradientWithRespecToWi(output, argValue, val);
-	    double updatedWeight = newWeight(level2Weights[i], gradientWi);
+	    double updatedWeight = newWeight(level2Weights[i], gradientWi, level2LastWeightsChange[i]);
 	    newLevel2Weights[i] = updatedWeight;
 	  }
 	  
@@ -137,7 +133,7 @@ public class NeuralNet implements NeuralNetInterface {
     for (int i = 0; i < numInputs; i++) {
       for (int j = 0; j < numHidden; j++) {
         double gradientWi = gradientOfOutputWithRespectToInput(output, argValue, hiddenValues[j], X[i]);
-        double updatedWeight = newWeight(level1Weights[tmp], gradientWi);
+        double updatedWeight = newWeight(level1Weights[tmp], gradientWi, level1LastWeightsChange[i]);
         newLevel1Weights[tmp] = updatedWeight;
         tmp++;
       }
@@ -146,7 +142,7 @@ public class NeuralNet implements NeuralNetInterface {
 	  // level 1 - bias
 	  for (int i = 0; i < numHidden; i++) {
 	    double gradientWi = gradientOfOutputWithRespectToInput(output, argValue, hiddenValues[i], bias);
-      double updatedWeight = newWeight(level1Weights[i], gradientWi);
+      double updatedWeight = newWeight(level1Weights[i], gradientWi, level1LastWeightsChange[i]);
       newLevel1Weights[i] = updatedWeight;
 	  }
 
@@ -165,48 +161,68 @@ public class NeuralNet implements NeuralNetInterface {
 		return errorForOutput;
 	}
 	
-	public void trainXORWithAcceptableError(double acceptableError) {
+	public void trainXORWithAcceptableError(double acceptableError, boolean bipolar) {
 	  initializeWeights();
 
 	  int numIterations = 0;
 	  double error = 0;
 	  double sumError = 0;
+	  double avgError = 0;
+	  int maxIterations = 10000;
+	  int maxResets = 1000;
+	  int countResets = 0;
+	  double zero = bipolar ? -1 : 0;
 	 	  
-	  double[] input1 = { 0, 1 };
+	  double[] input1 = { zero, 1 };
 	  double target1 = 1;  
 	  
-	  double[] input2 = { 1, 0 };
+	  double[] input2 = { 1, zero };
 	  double target2 = 1; 
 	  
 	  double[] input3 = { 1, 1 };
-	  double target3 = 0;
+	  double target3 = zero;
   
 	  double[] input4 = { 0, 0 };
-	  double target4 = 0;
+	  double target4 = zero;
+	  String tmpstr = "";
 	  
 	  do {
 	    sumError = 0;
-	    
-	    error = train(input1, target1);
-	    sumError += error;
-	    
-	    error = train(input2, target2);
-	    sumError += error;
+	    tmpstr = "";
       
       error = train(input3, target3);
+      tmpstr += (error + " , ");
+      sumError += error;
+            
+      error = train(input1, target1);
+      tmpstr += (error + " , ");
       sumError += error;
       
       error = train(input4, target4);
+      tmpstr += (error  + " , ");
       sumError += error;
+      
+      error = train(input2, target2);
+      tmpstr += (error);
+      sumError += error;
+      
+      avgError = sumError / 4;
       
       numIterations++;
       
-      if (numIterations == 1) {
-        System.out.println("Initial error: " + sumError);
+      System.out.println(numIterations + "," + avgError);
+      
+      if (numIterations == maxIterations && avgError > acceptableError) {
+        if (countResets < maxResets) {
+          numIterations = 0;
+          countResets++;
+          initializeWeights();
+          System.out.println("resets: " + countResets + " | avgError: " + avgError + " | errors: " + tmpstr);
+        }
       }
-	  } while (sumError >= acceptableError && numIterations < 10000000);
+	  } while (avgError > acceptableError && numIterations < maxIterations);
 	  
-	  System.out.println("Final error: " + sumError);
+	  System.out.println("Final error: " + avgError + " | errors: " + tmpstr);
 	  System.out.println("Final Level 1 weights: " + printArray(level1Weights));
 	  System.out.println("Final Level 2 weights: " + printArray(level2Weights));
     System.out.println("Iterations: " + numIterations);
@@ -314,8 +330,8 @@ public class NeuralNet implements NeuralNetInterface {
 	  return -(target - output) * (output * (1 - output)) * input;
 	}
 	
-	public double newWeight(double prev_weight, double gradientOfWeight) {
-	  return prev_weight - (learningRate * gradientOfWeight);
+	public double newWeight(double prev_weight, double gradientOfWeight, double deltaWeight) {
+	  return prev_weight - (learningRate * gradientOfWeight) + (momentumTerm * deltaWeight);
 	}
 	
 	public String printArray(double[] anArray) {
@@ -328,5 +344,14 @@ public class NeuralNet implements NeuralNetInterface {
     }
     return ret;
 	}
+	
+	public double gradientOfOutputWithRespectToInput(double finalOutput, double finalExpectedOutput, double hiddenValue, double input) {
+    double derivativeOfSigmoid = derivativeOfSigmoid(finalOutput);
+    return (-(finalExpectedOutput - finalOutput)) * derivativeOfSigmoid * (hiddenValue * (1 - hiddenValue)) * (input);
+  }
+	
+	public double derivativeOfSigmoid(double x) {
+    double c = b - a;
+    return (x-a) * (1 - ((x-a)/c));
+  }
 }
-
